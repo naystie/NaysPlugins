@@ -1,6 +1,6 @@
 /**
  * @name StereoPlus
- * @version 0.1.1
+ * @version 0.1.2
  * @author Naystie
  * @authorLink https://github.com/naystie
  * @source https://github.com/naystie/NaysPlugins/blob/main/StereoPlus.plugin.js
@@ -41,14 +41,14 @@ module.exports = (() => {
                 "github_username": "naystie"
             }],
             "authorLink": "https://github.com/naystie",
-            "version": "0.1.1",
+            "version": "0.1.2",
             "description": "Adds stereo sound to your own microphone's output. Requires a capable stereo microphone.",
             "github": "https://github.com/naystie",
             "github_raw": "https://raw.githubusercontent.com/naystie/NaysPlugins/main/StereoPlus.plugin.js"
         },
         "changelog": [{
             "title": "Changes",
-            "items": ["Added stereo toggle setting", "Added update checker"]
+            "items": ["Removed infobox", "Added audio quality slider"]
         }],
         "defaultConfig": [{
             "type": "switch",
@@ -57,24 +57,15 @@ module.exports = (() => {
             "note": "Enable or disable stereo sound output",
             "value": true
         }, {
-            "type": "dropdown",
+            "type": "slider",
             "id": "quality",
             "name": "Audio Quality",
             "note": "Select the audio quality for your stereo sound",
-            "value": "512000",
-            "options": [{
-                "label": "Low (64 kbps)",
-                "value": "64000"
-            }, {
-                "label": "Medium (128 kbps)",
-                "value": "128000"
-            }, {
-                "label": "High (256 kbps)",
-                "value": "256000"
-            }, {
-                "label": "Very High (512 kbps)",
-                "value": "512000"
-            }]
+            "value": 512000,
+            "min": 64000,
+            "max": 1024000,
+            "markers": [64000, 128000, 256000, 384000, 512000, 768000, 1024000],
+            "stickToMarkers": true
         }]
     };
 
@@ -124,8 +115,6 @@ module.exports = (() => {
                     this.checkVoiceSettings();
                     const voiceModule = WebpackModules.getByPrototypes("updateVideoQuality");
                     Patcher.after(voiceModule.prototype, "updateVideoQuality", this.replacement.bind(this));
-
-                    this.injectInfoBox();
                 }
 
                 checkVoiceSettings() {
@@ -170,34 +159,6 @@ module.exports = (() => {
                     return ret;
                 }
 
-                injectInfoBox() {
-                    const VoiceInfoModule = WebpackModules.find(m => m?.prototype?.render && m?.prototype?.render.toString().includes("ping"));
-                    Patcher.after(VoiceInfoModule.prototype, "render", (_this, _, ret) => {
-                        const locale = {
-                            stereo: "Stereo: ",
-                            quality: "Quality: "
-                        };
-
-                        const qualityLabel = config.defaultConfig.find(c => c.id === "quality").options.find(o => o.value === this.settings.quality).label;
-                        const stereoStatus = this.settings.enableStereo ? "Enabled" : "Disabled";
-
-                        const infoBox = React.createElement("div", {
-                                style: {
-                                    fontFamily: "Arial, sans-serif",
-                                    fontSize: "14px",
-                                    color: "#FFFFFF",
-                                    marginTop: "10px"
-                                }
-                            },
-                            `${locale.stereo}${stereoStatus}`,
-                            React.createElement("br"),
-                            `${locale.quality}${qualityLabel}`
-                        );
-
-                        ret.props.children.push(infoBox);
-                    });
-                }
-
                 onStop() {
                     Patcher.unpatchAll();
                 }
@@ -213,3 +174,4 @@ module.exports = (() => {
 })();
 
 /*@end@*/
+
