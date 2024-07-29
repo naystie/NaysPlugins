@@ -1,10 +1,9 @@
 /**
  * @name StereoPlus
- * @version 0.0.9
+ * @version 0.1.0
  * @author Naystie
- * @authorId 344871509677965313
  * @authorLink https://github.com/naystie
- * @source https://github.com/naystie/BD-NaysPlugins/blob/main/StereoPlus.plugin.js
+ * @source https://github.com/naystie/NaysPlugins/blob/main/StereoPlus.plugin.js
  */
 
 /*@cc_on
@@ -42,14 +41,14 @@ module.exports = (() => {
                 "github_username": "naystie"
             }],
             "authorLink": "https://github.com/naystie",
-            "version": "0.0.9",
+            "version": "0.1.0",
             "description": "Adds stereo sound to your own microphone's output. Requires a capable stereo microphone.",
-            "github": "https://github.com/naystie/BD-NaysPlugins",
-            "github_raw": "https://raw.githubusercontent.com/naystie/BD-NaysPlugins/main/StereoPlus.plugin.js"
+            "github": "https://github.com/naystie",
+            "github_raw": "https://raw.githubusercontent.com/naystie/NaysPlugins/main/StereoPlus.plugin.js"
         },
         "changelog": [{
             "title": "Changes",
-            "items": ["Added stereo toggle setting", "Removed toast notifications", "Replaced author names"]
+            "items": ["Added stereo toggle setting", "Added update checker"]
         }],
         "defaultConfig": [{
             "type": "switch",
@@ -113,26 +112,34 @@ module.exports = (() => {
         const plugin = (Plugin, Library) => {
             const {
                 WebpackModules,
-                Patcher
+                Patcher,
+                Toasts,
+                PluginUpdater
             } = Library;
 
             return class StereoSound extends Plugin {
                 onStart() {
-                    this.settingsWarning();
+                    PluginUpdater.checkForUpdate(config.info.name, config.info.version, "https://raw.githubusercontent.com/naystie/NaysPlugins/main/StereoPlus.plugin.js");
+
+                    this.checkVoiceSettings();
                     const voiceModule = WebpackModules.getByPrototypes("updateVideoQuality");
                     Patcher.after(voiceModule.prototype, "updateVideoQuality", this.replacement.bind(this));
+
+                    this.injectInfoBox();
                 }
 
-                settingsWarning() {
+                checkVoiceSettings() {
                     const voiceSettingsStore = WebpackModules.getByProps("getEchoCancellation");
                     if (
                         voiceSettingsStore.getNoiseSuppression() ||
                         voiceSettingsStore.getNoiseCancellation() ||
                         voiceSettingsStore.getEchoCancellation()
                     ) {
-                        console.warn("Please disable echo cancellation, noise reduction, and noise suppression for StereoSound");
-                        return true;
-                    } else return false;
+                        Toasts.show("Please disable echo cancellation, noise reduction, and noise suppression for StereoSound to work correctly.", {
+                            type: "warning",
+                            timeout: 5000
+                        });
+                    }
                 }
 
                 replacement(thisObj, _args, ret) {
@@ -161,6 +168,34 @@ module.exports = (() => {
                     };
 
                     return ret;
+                }
+
+                injectInfoBox() {
+                    const VoiceInfoModule = WebpackModules.find(m => m?.prototype?.render && m?.prototype?.render.toString().includes("ping"));
+                    Patcher.after(VoiceInfoModule.prototype, "render", (_this, _, ret) => {
+                        const locale = {
+                            stereo: "Stereo: ",
+                            quality: "Quality: "
+                        };
+
+                        const qualityLabel = config.defaultConfig.find(c => c.id === "quality").options.find(o => o.value === this.settings.quality).label;
+                        const stereoStatus = this.settings.enableStereo ? "Enabled" : "Disabled";
+
+                        const infoBox = React.createElement("div", {
+                                style: {
+                                    fontFamily: "Arial, sans-serif",
+                                    fontSize: "14px",
+                                    color: "#FFFFFF",
+                                    marginTop: "10px"
+                                }
+                            },
+                            `${locale.stereo}${stereoStatus}`,
+                            React.createElement("br"),
+                            `${locale.quality}${qualityLabel}`
+                        );
+
+                        ret.props.children.push(infoBox);
+                    });
                 }
 
                 onStop() {
