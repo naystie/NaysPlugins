@@ -1,6 +1,6 @@
 /**
  * @name StereoPlus
- * @version 0.1.2
+ * @version 0.1.3
  * @author Naystie
  * @authorLink https://github.com/naystie
  * @source https://github.com/naystie/NaysPlugins/blob/main/StereoPlus.plugin.js
@@ -41,7 +41,7 @@ module.exports = (() => {
                 "github_username": "naystie"
             }],
             "authorLink": "https://github.com/naystie",
-            "version": "0.1.2",
+            "version": "0.1.3",
             "description": "Adds stereo sound to your own microphone's output. Requires a capable stereo microphone.",
             "github": "https://github.com/naystie",
             "github_raw": "https://raw.githubusercontent.com/naystie/NaysPlugins/main/StereoPlus.plugin.js"
@@ -63,8 +63,8 @@ module.exports = (() => {
             "note": "Select the audio quality for your stereo sound",
             "value": 512000,
             "min": 64000,
-            "max": 1024000,
-            "markers": [64000, 128000, 256000, 384000, 512000, 768000, 1024000],
+            "max": 512000,
+            "markers": [64000, 128000, 256000, 384000, 512000],
             "stickToMarkers": true
         }]
     };
